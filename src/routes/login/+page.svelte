@@ -4,6 +4,7 @@
   import { enhance } from '$app/forms';
   import { auth } from '$lib/firebase';
   import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+  import type { User } from 'firebase/auth';
   import { goto } from '$app/navigation';
   import { setSessionCookie } from '$lib/session';
   import { getOnboardingStatus, createOnboardingStatus } from '$lib/firebase/onboarding';
@@ -22,6 +23,16 @@
   let animationFrame: number;
   let isLoggingIn = false;
   
+  // Variáveis para controle de rotação baseada no movimento do mouse
+  let mouseX = 0;
+  let mouseY = 0;
+  let targetRotationX = 0;
+  let targetRotationY = 0;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+  let velocityX = 0;
+  let velocityY = 0;
+  
   // Configurações do sistema de partículas
   const GRID_SIZE = 100;
   const GRID_RESOLUTION = 70;
@@ -32,7 +43,7 @@
   
   onMount(() => {
     // Verifica se já está autenticado
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
       if (user) {
         goto('/hub2');
       }
@@ -51,10 +62,32 @@
     }
 
     window.addEventListener('resize', handleResize);
+    
+    // Adiciona listener para movimento do mouse
+    function handleMouseMove(event: MouseEvent) {
+      // Guarda valores anteriores para calcular direção e velocidade
+      lastMouseX = mouseX;
+      lastMouseY = mouseY;
+      
+      // Normaliza a posição do mouse para valores entre -1 e 1
+      // Representa a distância do centro da tela
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -((event.clientY / window.innerHeight) * 2 - 1);
+      
+      // Calcula a velocidade do movimento
+      velocityX = mouseX - lastMouseX;
+      velocityY = mouseY - lastMouseY;
+      
+      // Aplicação suave para o eixo vertical
+      targetRotationX = targetRotationX * 0.8 + mouseY * 0.2;
+    }
+    
+    window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
       unsubscribe();
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
       if (container && renderer.domElement) {
         container.removeChild(renderer.domElement);
       }
@@ -76,7 +109,7 @@
     // Posiciona a câmera significativamente mais alta para melhor enquadramento, como na imagem de referência
     camera.position.z = 70; // Afasta mais a câmera para ter uma visão mais ampla
     camera.position.y = 5; // Posição bem mais elevada
-    (camera as any).lookAt(0, 1, 0); // Mantém o olhar para a esfera central
+    (camera as any).lookAt(new THREE.Vector3(0, 5, 0)); // Mantém o olhar para o buraco negro no centro
     
     // Adiciona uma luz ambiente sutil
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -214,9 +247,51 @@
   function animate() {
     animationFrame = requestAnimationFrame(animate);
 
-    // Rotação lenta do buraco negro
-    if (blackHole) {
-      blackHole.rotation.y += 0.002;
+    // Movimentação da câmera baseada no mouse
+    if (camera) {
+      // Valores de sensibilidade - reduzidos para o eixo Y
+      const baseRotationSpeed = 0.0005; // Velocidade base reduzida para eixo Y
+      
+      // Calcula a distância do cursor ao centro da tela (0,0)
+      const distanceFromCenter = Math.sqrt(mouseX * mouseX + mouseY * mouseY);
+      
+      // Fator que aumenta com a distância do centro
+      const distanceFactor = Math.pow(distanceFromCenter, 1.5); // Exponencial para amplificar efeito nas bordas
+      
+      // Movimento horizontal (eixo Y) com velocidade reduzida e baseada na distância do centro
+      const positionBasedSpeedX = baseRotationSpeed * Math.sign(mouseX) * Math.abs(mouseX) * distanceFactor * 0.7;
+      
+      // Mesma lógica para o eixo vertical (eixo X)
+      const baseVerticalSpeed = 0.00001;
+      const positionBasedSpeedY = baseVerticalSpeed * Math.sign(mouseY) * Math.abs(mouseY) * distanceFactor * 3;
+      
+      // Acumulamos a rotação horizontal baseada na posição e distância do mouse
+      targetRotationY += positionBasedSpeedX;
+      
+      // Acumulamos a posição vertical com a mesma lógica
+      targetRotationX += positionBasedSpeedY;
+      
+      // Calculamos a posição da câmera em coordenadas esféricas
+      const radius = 70; // Distância radial da câmera (mantida constante)
+      const horizontalAngle = targetRotationY * Math.PI * 0.15; // Reduzido em 50% (de 0.3 para 0.15)
+      
+      // Limitamos o ângulo vertical para evitar rotações extremas
+      // Isso restringe o movimento para que a câmera não vá muito acima ou abaixo da esfera
+      const maxVerticalAngle = 0.75; // Reduzido em 50% (de 1.5 para 0.75)
+      const clampedVerticalRotation = Math.max(-maxVerticalAngle, Math.min(maxVerticalAngle, targetRotationX));
+      const verticalAngle = clampedVerticalRotation * Math.PI * 0.075; // Reduzido em 50% (de 0.15 para 0.075)
+      
+      // Convertemos as coordenadas esféricas para cartesianas
+      // Isso permite movimento completo em torno da esfera em ambos os eixos
+      camera.position.x = radius * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
+      camera.position.y = radius * Math.sin(verticalAngle) + 5; // Adicionamos 5 para centralizar em torno da esfera
+      camera.position.z = radius * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
+      
+      // Removemos a inclinação da câmera para manter o foco apenas pela posição
+      (camera as any).rotation.x = 0;
+      
+      // Mantém a câmera sempre olhando para a esfera central
+      (camera as any).lookAt(new THREE.Vector3(0, 5, 0));
     }
     
     // Atualiza as posições das partículas para simular efeito gravitacional
@@ -460,7 +535,7 @@
           <div class="w-full border-t border-black/10"></div>
         </div>
         <div class="relative flex justify-center text-sm">
-          <span class="px-2 text-gray-700 bg-white">Ou continue com</span>
+          <span class="px-2 text-gray-700 bg-white/85">Ou continue com</span>
         </div>
       </div>
 
