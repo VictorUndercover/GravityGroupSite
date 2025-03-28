@@ -6,6 +6,8 @@
   import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
   import { goto } from '$app/navigation';
   import { setSessionCookie } from '$lib/session';
+  import { getOnboardingStatus, createOnboardingStatus } from '$lib/firebase/onboarding';
+  import { hasSignedLatestTerms } from '$lib/firebase/terms';
   
   let loading = false;
   let error = '';
@@ -245,11 +247,29 @@
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (userCredential.user) {
-        // Espera a animação terminar antes de redirecionar
-        setTimeout(async () => {
-          await setSessionCookie();
-          window.location.replace('/hub2');
-        }, 2000);
+        await setSessionCookie();
+        
+        // Verifica se o usuário já tem status de onboarding
+        const onboardingStatus = await getOnboardingStatus(userCredential.user);
+        
+        // Se não tiver, cria um novo status
+        if (!onboardingStatus) {
+          await createOnboardingStatus(userCredential.user);
+          // Redireciona para o onboarding
+          window.location.replace('/onboarding');
+          return;
+        }
+        
+        // Verifica se já aceitou os termos mais recentes
+        const hasAcceptedTerms = await hasSignedLatestTerms(userCredential.user);
+        if (!hasAcceptedTerms) {
+          // Redireciona para a página de termos
+          window.location.replace('/terms/2025-03-20');
+          return;
+        }
+        
+        // Se já completou tudo, vai para o hub
+        window.location.replace('/hub2');
       }
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -277,11 +297,29 @@
       const result = await signInWithPopup(auth, provider);
       
       if (result.user) {
-        // Espera a animação terminar antes de redirecionar
-        setTimeout(async () => {
-          await setSessionCookie();
-          window.location.replace('/hub2');
-        }, 2000);
+        await setSessionCookie();
+        
+        // Verifica se o usuário já tem status de onboarding
+        const onboardingStatus = await getOnboardingStatus(result.user);
+        
+        // Se não tiver, cria um novo status
+        if (!onboardingStatus) {
+          await createOnboardingStatus(result.user);
+          // Redireciona para o onboarding
+          window.location.replace('/onboarding');
+          return;
+        }
+        
+        // Verifica se já aceitou os termos mais recentes
+        const hasAcceptedTerms = await hasSignedLatestTerms(result.user);
+        if (!hasAcceptedTerms) {
+          // Redireciona para a página de termos
+          window.location.replace('/terms/2025-03-20');
+          return;
+        }
+        
+        // Se já completou tudo, vai para o hub
+        window.location.replace('/hub2');
       }
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -370,12 +408,12 @@
   <div bind:this={container} class="absolute inset-0 z-0"></div>
   
   <div class="relative z-10 flex items-center justify-center min-h-screen">
-    <div class="w-full max-w-md p-8 space-y-6 bg-white/20 backdrop-blur-sm rounded-lg shadow-xl border border-black/10">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white/20 backdrop-blur-sm rounded-lg shadow-xl border border-black/10 mx-4 sm:mx-0">
       <div class="flex justify-center mb-6">
         <img 
           src="/images/Logo Redondo Preto - Sem Fundo.png" 
           alt="Gravity Logo" 
-          class="h-[120px] w-auto"
+          class="h-[90px] sm:h-[120px] w-auto"
         />
       </div>
       
