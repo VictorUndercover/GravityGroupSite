@@ -259,11 +259,13 @@
       const distanceFactor = Math.pow(distanceFromCenter, 1.5); // Exponencial para amplificar efeito nas bordas
       
       // Movimento horizontal (eixo Y) com velocidade reduzida e baseada na distância do centro
-      const positionBasedSpeedX = baseRotationSpeed * Math.sign(mouseX) * Math.abs(mouseX) * distanceFactor * 0.7;
+      // Aumentado em 50% (de 0.7 para 1.05)
+      const positionBasedSpeedX = baseRotationSpeed * Math.sign(mouseX) * Math.abs(mouseX) * distanceFactor * 30.0;
       
       // Mesma lógica para o eixo vertical (eixo X)
       const baseVerticalSpeed = 0.00001;
-      const positionBasedSpeedY = baseVerticalSpeed * Math.sign(mouseY) * Math.abs(mouseY) * distanceFactor * 3;
+      // Reduzido em 40% (de 3 para 1.8)
+      const positionBasedSpeedY = baseVerticalSpeed * Math.sign(mouseY) * Math.abs(mouseY) * distanceFactor * 1.0;
       
       // Acumulamos a rotação horizontal baseada na posição e distância do mouse
       targetRotationY += positionBasedSpeedX;
