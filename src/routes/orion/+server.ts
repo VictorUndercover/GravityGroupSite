@@ -1,9 +1,9 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import OpenAI from 'openai';
-import { OPENAI_API_KEY } from '$env/static/private';
+// import { OPENAI_API_KEY } from '$env/static/private';
 
 const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY
+  apiKey: 'sk-dummy-api-key-for-build-only',
 });
 
 export const POST: RequestHandler = async ({ request }) => {

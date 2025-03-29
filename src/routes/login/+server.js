@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { JWT_SECRET } from '$env/static/private';
+// import { JWT_SECRET } from '$env/static/private';
+const JWT_SECRET = 'gravity_group_secret_2025';
 import jwt from 'jsonwebtoken';
 
 // Simulação de banco de dados (você deve substituir por um banco real)

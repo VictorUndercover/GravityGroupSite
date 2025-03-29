@@ -10,6 +10,73 @@ export interface InvestmentLevel {
   nextGoal?: string;
 }
 
+export interface InvestmentCategory {
+  id: number;
+  name: string;
+  color: string;
+  minAmount: number;
+  maxAmount: number | null;
+  icon: string;
+  description: string;
+  examples: InvestmentExample[];
+}
+
+export interface InvestmentExample {
+  id: number;
+  name: string;
+  description: string;
+  riskLevel: number;
+  expectedReturn: number;
+  minInvestment: number;
+  duration: string;
+  tags: string[];
+}
+
+export const INVESTMENT_CATEGORIES: InvestmentCategory[] = [
+  {
+    id: 1,
+    name: "Renda Fixa",
+    color: "#3B82F6",
+    minAmount: 0,
+    maxAmount: 50000,
+    icon: "💰",
+    description: "Investimentos de baixo risco com retorno previsível",
+    examples: [
+      {
+        id: 101,
+        name: "Tesouro Direto",
+        description: "Títulos públicos do governo federal",
+        riskLevel: 1,
+        expectedReturn: 8.5,
+        minInvestment: 30,
+        duration: "2-5 anos",
+        tags: ["Segurança", "Liquidez média", "Garantia do Tesouro Nacional"]
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: "Renda Variável",
+    color: "#10B981",
+    minAmount: 50000,
+    maxAmount: 250000,
+    icon: "📈",
+    description: "Investimentos de maior risco com potencial de retorno elevado",
+    examples: [
+      {
+        id: 201,
+        name: "Ações",
+        description: "Participação em empresas listadas na bolsa",
+        riskLevel: 4,
+        expectedReturn: 15,
+        minInvestment: 100,
+        duration: "5+ anos",
+        tags: ["Alto risco", "Potencial de valorização", "Dividendos"]
+      }
+    ]
+  }
+];
+
 export const investmentLevels: InvestmentLevel[] = [
   {
     id: 'mercury',
