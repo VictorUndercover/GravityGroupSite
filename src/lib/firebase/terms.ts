@@ -1,4 +1,4 @@
-import { db } from './config';
+import { db } from '../firebase.js';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 

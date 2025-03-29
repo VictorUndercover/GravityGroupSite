@@ -5,6 +5,9 @@
 	import { user } from '$lib/stores/auth';
 	import { terms } from '$lib/stores/terms';
 	import TermsOfService from '$lib/components/legal/TermsOfService.svelte';
+	import { auth } from '$lib/firebase';
+	import { updateOnboardingStep, getOnboardingStatus } from '$lib/firebase/onboarding';
+	import { signTerms } from '$lib/firebase/terms';
 
 	let currentStep = 1;
 	let userName = '';
@@ -68,15 +71,49 @@
 		}
 	];
 
-	onMount(() => {
+	onMount(async () => {
 		setTimeout(() => {
 			showLogo = true;
 		}, 500);
+
+		// Verifica se o usuário está autenticado
+		if (!auth.currentUser) {
+			goto('/login');
+			return;
+		}
+		
+		// Verifica o status atual do onboarding
+		if (auth.currentUser) {
+			try {
+				const status = await getOnboardingStatus(auth.currentUser);
+				if (status?.steps.termsAccepted) {
+					termsAccepted = true;
+					showTerms = false;
+				}
+			} catch (error) {
+				console.error('Erro ao verificar status do onboarding:', error);
+			}
+		}
 	});
 
-	function handleTermsAccept() {
-		termsAccepted = true;
-		showTerms = false;
+	async function handleTermsAccept() {
+		if (!auth.currentUser) return;
+		
+		try {
+			loading = true;
+			// Salva a assinatura do termo no Firebase
+			await signTerms(auth.currentUser, terms.getCurrentVersion());
+			// Atualiza o status do onboarding
+			await updateOnboardingStep(auth.currentUser, 'termsAccepted', true);
+			
+			termsAccepted = true;
+			showTerms = false;
+		} catch (error) {
+			console.error('Erro ao aceitar termos:', error);
+			alert('Ocorreu um erro ao aceitar os termos. Por favor, tente novamente.');
+		} finally {
+			loading = false;
+		}
 	}
 
 	function handleTermsReject() {
@@ -122,12 +159,46 @@
 			if (!canProceed()) return;
 
 			if (currentStep === 1) {
-				// Aceitar os termos ao avançar
+				if (!termsAccepted && auth.currentUser) {
+					// Aceitar os termos ao avançar caso ainda não estejam aceitos
+					try {
+						await signTerms(auth.currentUser, terms.getCurrentVersion());
+						await updateOnboardingStep(auth.currentUser, 'termsAccepted', true);
+					} catch (error) {
+						console.error('Erro ao aceitar termos:', error);
+					}
+				}
 				terms.accept();
+			}
+
+			if (currentStep === 2 && auth.currentUser) {
+				// Atualiza o status do perfil no onboarding
+				try {
+					await updateOnboardingStep(auth.currentUser, 'profileCompleted', true);
+				} catch (error) {
+					console.error('Erro ao atualizar perfil:', error);
+				}
+			}
+
+			if (currentStep === 3 && auth.currentUser) {
+				// Atualiza as preferências no onboarding
+				try {
+					await updateOnboardingStep(auth.currentUser, 'preferencesSet', true);
+				} catch (error) {
+					console.error('Erro ao atualizar preferências:', error);
+				}
 			}
 
 			if (currentStep === 4) {
 				loading = true;
+				if (auth.currentUser) {
+					// Marca o tutorial como assistido
+					try {
+						await updateOnboardingStep(auth.currentUser, 'tutorialWatched', true);
+					} catch (error) {
+						console.error('Erro ao atualizar tutorial:', error);
+					}
+				}
 				await new Promise(resolve => setTimeout(resolve, 1500)); // Simulação de carregamento
 				loading = false;
 			}

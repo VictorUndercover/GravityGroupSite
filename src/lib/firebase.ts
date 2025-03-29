@@ -4,13 +4,13 @@ import { getFirestore } from 'firebase/firestore';
 
 // Usamos valores fictícios para o build, mas em produção virão das variáveis de ambiente
 const firebaseConfig = {
-  apiKey: "dummy-api-key-for-build",
-  authDomain: "gravity-group-site.firebaseapp.com",
-  projectId: "gravity-group-site",
-  storageBucket: "gravity-group-site.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcd1234efgh5678",
-  measurementId: "G-ABCDEFGHIJ"
+    apiKey: "AIzaSyBTF3VN0bKW5G1E7c6r9jD6jZcYjI6RoY0",
+    authDomain: "gravity-group-2025.firebaseapp.com",
+    projectId: "gravity-group-2025",
+    storageBucket: "gravity-group-2025.firebasestorage.app",
+    messagingSenderId: "113780516172",
+    appId: "1:113780516172:web:7a197ec3e948173ee81be9",
+    measurementId: "G-F0MWX9Y6CC"
 };
 
 // Inicializa o Firebase apenas se não houver uma instância existente

@@ -51,14 +51,14 @@
   <!-- Botão do chat -->
   <button
     on:click={toggleChat}
-    class="bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg transition-all duration-300 transform hover:scale-105"
+    class="bg-green-500 hover:bg-green-600 text-white rounded-full p-6 shadow-lg transition-all duration-300 transform hover:scale-105"
   >
     {#if !showChat}
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z" />
       </svg>
     {:else}
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
       </svg>
     {/if}
@@ -66,7 +66,7 @@
 
   <!-- Janela do chat -->
   {#if showChat}
-    <div class="absolute bottom-20 right-0 w-96 bg-gray-900 rounded-lg shadow-xl border border-gray-700 overflow-hidden">
+    <div class="absolute bottom-28 right-0 w-96 bg-gray-900 rounded-lg shadow-xl border border-gray-700 overflow-hidden">
       <!-- Cabeçalho -->
       <div class="bg-gray-800 p-4 border-b border-gray-700">
         <h3 class="text-white font-medium">Orion - Assistente Virtual</h3>

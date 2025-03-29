@@ -34,55 +34,50 @@
 
             // Redireciona para o próximo passo do onboarding se necessário
             if (onboardingStatus?.steps.termsAccepted) {
-                const nextStep = getNextOnboardingStep(auth.currentUser);
+                const nextStep = await getNextOnboardingStep(auth.currentUser);
                 if (nextStep) {
                     goto(`/onboarding/${nextStep}`);
                 } else {
                     goto('/dashboard');
                 }
             }
+            
+            // Salva também em cookie para fácil acesso
+            document.cookie = `terms_accepted=true;path=/;max-age=${60 * 60 * 24 * 365}`;
+            document.cookie = `terms_version=${version};path=/;max-age=${60 * 60 * 24 * 365}`;
+            document.cookie = `terms_acceptance_date=${new Date().toISOString()};path=/;max-age=${60 * 60 * 24 * 365}`;
+            
+            // Redireciona para a página principal
+            goto('/hub');
         } catch (error) {
             console.error('Erro ao aceitar os termos:', error);
         } finally {
             loading = false;
         }
     }
-
+    
     async function handleSkip() {
         if (!auth.currentUser) return;
-
+        
         try {
             loading = true;
-            await skipOnboardingStep(auth.currentUser, 'termsAccepted');
-            const nextStep = await getNextOnboardingStep(auth.currentUser);
-            if (nextStep) {
-                goto(`/onboarding/${nextStep}`);
+            // Apenas marca como tendo visto os termos, sem assinar
+            if (onboardingStatus) {
+                await skipOnboardingStep(auth.currentUser, 'termsAccepted');
+                goto('/hub');
             } else {
-                goto('/dashboard');
+                // Se não estiver no onboarding, volta para a página anterior
+                history.back();
             }
         } catch (error) {
-            console.error('Erro ao pular etapa:', error);
+            console.error('Erro ao pular os termos:', error);
         } finally {
             loading = false;
         }
     }
-
-    onMount(async () => {
-        if (auth.currentUser) {
-            try {
-                loading = true;
-                signature = await getTermsSignature(auth.currentUser, version);
-                onboardingStatus = await getOnboardingStatus(auth.currentUser);
-            } catch (error) {
-                console.error('Erro ao buscar assinatura:', error);
-            } finally {
-                loading = false;
-            }
-        }
-    });
-
+    
     function formatDate(date: Date): string {
-        return date.toLocaleString('pt-BR', {
+        return date.toLocaleDateString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -90,6 +85,21 @@
             minute: '2-digit'
         });
     }
+    
+    onMount(async () => {
+        if (!auth.currentUser) {
+            goto('/login');
+            return;
+        }
+        
+        try {
+            // Verifica se o usuário já assinou esta versão dos termos
+            signature = await getTermsSignature(auth.currentUser, version);
+            onboardingStatus = await getOnboardingStatus(auth.currentUser);
+        } catch (error) {
+            console.error('Erro ao verificar assinatura:', error);
+        }
+    });
 </script>
 
 <UnifiedLayout {activeSection} {lightMode} {accentColor}>

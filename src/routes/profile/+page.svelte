@@ -12,6 +12,7 @@
   import { profile } from '$lib/stores/profile';
   import UnifiedLayout from '$lib/components/UnifiedLayout.svelte';
   import GravityCard from '$lib/components/GravityCard.svelte';
+  import { hasSignedLatestTerms, getTermsSignature } from '$lib/firebase/terms';
 
   let loading = true;
   let charts: ApexCharts[] = [];
@@ -264,7 +265,45 @@
     }
   }
 
-  onMount(() => {
+  let termsStatus = {
+    accepted: false,
+    version: '',
+    date: null as Date | null,
+    loading: true
+  };
+
+  onMount(async () => {
+    // Verificar status dos termos no Firebase
+    if (auth.currentUser) {
+      try {
+        // Verifica se assinou a versão mais recente dos termos
+        const hasSigned = await hasSignedLatestTerms(auth.currentUser);
+        
+        // Busca a assinatura mais recente para exibir detalhes
+        const latestVersion = '2025.03.20'; // Versão mais recente dos termos
+        const signature = await getTermsSignature(auth.currentUser, latestVersion);
+        
+        if (signature) {
+          termsStatus = {
+            accepted: true,
+            version: signature.version,
+            date: signature.signedAt.toDate(),
+            loading: false
+          };
+        } else {
+          termsStatus = {
+            accepted: false,
+            version: '',
+            date: null,
+            loading: false
+          };
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status dos termos:', error);
+        termsStatus.loading = false;
+      }
+    }
+
     // Verificar cookies
     const termsAccepted = document.cookie.includes('terms_accepted=true');
     const onboardingCompleted = document.cookie.includes('onboarding_completed=true');
@@ -285,6 +324,10 @@
 
   function handleRedoOnboarding() {
     goto('/onboarding');
+  }
+  
+  function handleGoToTerms() {
+    goto('/terms/2025-03-20');
   }
 </script>
 
@@ -382,6 +425,63 @@
               </div>
             {/each}
           </div>
+        </GravityCard>
+        
+        <!-- Card de Termos de Serviço -->
+        <GravityCard
+          title="Termos de Serviço"
+          {lightMode}
+          {accentColor}
+        >
+          {#if termsStatus.loading}
+            <div class="flex justify-center py-4">
+              <div class="w-8 h-8 border-4 border-t-transparent border-blue-500 rounded-full animate-spin"></div>
+            </div>
+          {:else if termsStatus.accepted}
+            <div class="flex items-start mb-4">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center bg-green-500/20 text-green-500 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium">Termos aceitos</p>
+                <p class="text-sm" class:text-black={lightMode} class:text-white={!lightMode} style:opacity="0.6">
+                  Versão {termsStatus.version} aceita em {termsStatus.date ? termsStatus.date.toLocaleDateString('pt-BR') : '-'}
+                </p>
+              </div>
+            </div>
+            <button
+              on:click={handleViewTerms}
+              class="w-full px-4 py-2 rounded-lg text-center transition-colors"
+              style:background-color={`${accentColor}20`}
+              style:color={accentColor}
+              style:border={`1px solid ${accentColor}40`}
+            >
+              Ver histórico dos termos
+            </button>
+          {:else}
+            <div class="flex items-start mb-4">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-500 mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium">Termos pendentes</p>
+                <p class="text-sm" class:text-black={lightMode} class:text-white={!lightMode} style:opacity="0.6">
+                  É necessário aceitar os novos termos de serviço
+                </p>
+              </div>
+            </div>
+            <button
+              on:click={handleGoToTerms}
+              class="w-full px-4 py-2 rounded-lg text-white text-center transition-colors"
+              style:background-color={accentColor}
+            >
+              Revisar e aceitar termos
+            </button>
+          {/if}
         </GravityCard>
       </div>
       
